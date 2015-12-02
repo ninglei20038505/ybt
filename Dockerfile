@@ -1,27 +1,23 @@
-FROM ubuntu 
-MAINTAINER Rafael Pestano <rmpestano@gmail.com> 
-setup WildFly 
-COPY wildfly-8.2.0.Final /opt/wildfly 
-install example app on wildfy 
-COPY car-service.war /opt/wildfly/standalone/deployments/ 
-setup Java 
-RUN mkdir /opt/java 
+# 选择一个已有的os镜像作为基础
+FROM centos:centos6
  
-COPY jdk-8u25-linux-x64.tar.gz /opt/java/ 
-change dir to Java installation dir 
-WORKDIR /opt/java/ 
+# 镜像的作者
+MAINTAINER Fanbin Kong "kongxx@hotmail.com"
  
-RUN tar -zxf jdk-8u25-linux-x64.tar.gz 
-setup environment variables 
-RUN update-alternatives --install /usr/bin/javac javac /opt/java/jdk1.8.0_25/bin/javac 100 
+# 安装openssh-server和sudo软件包，并且将sshd的UsePAM参数设置成no
+RUN yum install -y openssh-server sudo
+RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
  
-RUN update-alternatives --install /usr/bin/java java /opt/java/jdk1.8.0_25/bin/java 100 
+# 添加测试用户admin，密码admin，并且将此用户添加到sudoers里
+RUN useradd admin
+RUN echo "admin:admin" | chpasswd
+RUN echo "admin   ALL=(ALL)       ALL" >> /etc/sudoers
  
-RUN update-alternatives --display java 
+# 下面这两句比较特殊，在centos6上必须要有，否则创建出来的容器sshd不能登录
+RUN ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key
+RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key
  
-RUN java -version 
-Expose the ports we're interested in 
-EXPOSE 8080 9990 
-Set the default command to run on boot 
-This will boot WildFly in the standalone mode and bind to all interface 
-CMD ["/opt/wildfly/bin/standalone.sh", "-c", "standalone-full.xml", "-b", "0.0.0.0"] 
+# 启动sshd服务并且暴露22端口
+RUN mkdir /var/run/sshd
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
