@@ -7,6 +7,8 @@ MAINTAINER Fanbin Kong "kongxx@hotmail.com"
 # 安装openssh-server和sudo软件包，并且将sshd的UsePAM参数设置成no
 RUN yum install -y openssh-server sudo
 RUN sed -i 's/UsePAM yes/UsePAM no/g' /etc/ssh/sshd_config
+RUN sed -i 's/PermitTunnel yes/PermitTunnel no/g' /etc/ssh/sshd_config
+
  
 # 添加测试用户admin，密码admin，并且将此用户添加到sudoers里
 RUN useradd admin
